@@ -1,0 +1,593 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..Create
+Gui.Form..Caption("Revenue Dashboard")
+Gui.Form..Size(15375,10695)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form..Position(0,0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..MousePointer(0)
+Gui.Form..Event(UnLoad,Form_UnLoad)
+Gui.Form.GsGC_Data.Create(GsGridControl)
+Gui.Form.GsGC_Data.Size(15075,9195)
+Gui.Form.GsGC_Data.Position(45,900)
+Gui.Form.GsGC_Data.Event(RowCellClick,GsGC_Data_RowCellClick)
+Gui.Form.dtp_Start.Create(DatePicker)
+Gui.Form.dtp_Start.Size(1935,285)
+Gui.Form.dtp_Start.Position(390,345)
+Gui.Form.dtp_End.Create(DatePicker)
+Gui.Form.dtp_End.Size(1935,285)
+Gui.Form.dtp_End.Position(2550,360)
+Gui.Form.lbl_BegDate.Create(Label,"Beginning Date",True,1935,255,0,360,150,True,0,"Arial",8,-2147483633,0)
+Gui.Form.lbl_EndDate.Create(Label,"Ending Date",True,1935,255,0,2520,150,True,0,"Arial",8,-2147483633,0)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+'Program.External.Include.Library("Gridview_UniversalFunctions.lib",False)
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+	F.Intrinsic.Control.CallSub(SetContextMenu)
+	F.Intrinsic.Control.CallSub(Set_Anchors)
+	
+	Gui.Form..Show
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.GsGC_Data_RowCellClick.Start
+Program.Sub.GsGC_Data_RowCellClick.End
+
+Program.Sub.Form_UnLoad.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+	'F.Intrinsic.Control.CallSub(Serialize)
+
+	'Check if DataTable exists, if so, close it
+	F.Intrinsic.Control.If(V.DataTable.dtData.Exists)
+		F.Data.DataTable.Close("dtData")
+	F.Intrinsic.Control.EndIf
+	
+'	'Check if DB connection exists
+'	F.Intrinsic.Control.If(V.ODBC.con.State,=,1)
+'		F.ODBC.Connection!con.Close
+'	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.End
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.Click_Refresh.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+	Gui.Form.GsGC_Data.SetFocus(True)
+	'F.Intrinsic.Control.CallSub(Serialize)
+	F.Intrinsic.Control.CallSub(Load_Data)
+	'F.Intrinsic.Control.CallSub(Deserialize)
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Click_Refresh.End
+
+Program.Sub.Click_Export.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+	V.Local.bExcel.Declare
+	V.Local.sFileExport.Declare
+	V.Local.bFileLocked.Declare
+	V.Local.sMsg.Declare
+	V.Local.sControl.Declare(String,"GsGC_Data")
+		
+	'F.Intrinsic.Control.CallSub(ExportGrid,"sGridControls","Form*!*GsGCData")
+	
+	'Check for Excel
+	F.Automation.MSExcel.CheckPresence(V.Local.bExcel)
+	
+	'If Excel is installed
+	F.Intrinsic.Control.If(V.Local.bExcel)
+		F.Intrinsic.String.Build("{0}6080_Revenue_Export.xlsx",V.Caller.LocalGSSTempDir,V.Local.sFileExport)
+		F.Intrinsic.File.IsFileLocked(V.Local.sFileExport,V.Local.bFileLocked)
+		'Check for file lock
+		F.Intrinsic.Control.If(V.Local.bFileLocked)
+			'locked file msg
+			F.Intrinsic.String.Build("File is already open. Please close and export again.{0}Files: {1}",V.Ambient.NewLine,V.Local.sFileExport,V.Local.sMsg)
+			F.Intrinsic.UI.Msgbox(V.Local.sMsg,"File In Use")
+		F.Intrinsic.Control.Else
+			'Export file
+			'Gui.Form.["GsGC_Data"].Export(V.Local.sFileExport,"xlsx")
+			Gui.Form.[V.Local.sControl].Export(V.Local.sFileExport,"xlsx")
+			F.Intrinsic.Task.ShellExec(0,"",V.Local.sFileExport,"","",1)
+		F.Intrinsic.Control.EndIf
+	'If Excel is NOT installed
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Build("{0}6080_Revenue_Export.csv",V.Caller.LocalGSSTempDir,V.Local.sFileExport)
+		F.Intrinsic.File.IsFileLocked(V.Local.sFileExport,V.Local.bFileLocked)
+		F.Intrinsic.Control.If(V.Local.bFileLocked)
+			F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}",V.Ambient.NewLine,V.Local.sFileExport,V.Local.sMsg)
+		F.Intrinsic.Control.Else
+			Gui.Form.[V.Local.sControl].Export(V.Local.sFileExport,"csv")
+			F.Intrinsic.Task.ShellExec(0,"",V.Local.sFileExport,"","",1)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Click_Export.End
+
+Program.Sub.Set_Anchors.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+	'0 - None
+	'1 - Top
+	'2 - Bottom
+	'4 - Left
+	'8 - Right
+
+	Gui.Form.dtp_End.Anchor(5)
+	Gui.Form.dtp_Start.Anchor(5)
+	Gui.Form.GsGC_Data.Anchor(15)
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Set_Anchors.End
+
+Program.Sub.Load_Data.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+	V.Local.sSQL.Declare
+	
+	gui.Form..Enabled(false)
+	
+	F.Intrinsic.UI.InvokeWaitDialog("Loading...","Please Wait...")
+	Gui.Form.dtp_Start.Enabled(False)
+	Gui.Form.dtp_End.Enabled(False)
+	
+'	'Check if DB connection exists
+'	F.Intrinsic.Control.If(V.ODBC.con.State,=,1)
+'		F.ODBC.Connection!con.Close
+'	F.Intrinsic.Control.EndIf
+	
+'F.Intrinsic.String.Build("SELECT OHL.PRODUCT_LINE, OHL.DATE_INVOICE, JO.SEQ, JO.LMO, JO.PART, OHL.INVOICE, OTW.JOB + '-' + OTW.SUFFIX as JOB_SUFFIX, JH.QTY_ORDER, JO.BURDEN, JO.UM, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' WHEN JO.LMO = 'L' THEN (Select SUM(JDS.QTY * JDS.LABOR_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) ELSE '0' End AS LABOR_COST, (Select CAST(SUM(JDS.MATL_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as MATERIAL_COST, Case 	WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select cast(SUM(JDS.QTY * JDS.OUTS_COST) as float) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End as OUTSIDE_COST, (Select CAST(SUM(JDS.FRGT_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as FREIGHT, Case 	WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select SUM(JDS.QTY * JDS.OVHD_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End AS OVERHEAD_COST, (Select CAST(SUM(JDS.OTH_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as OTHER_COST, OHL.QTY_SHIPPED, Case 	WHEN JO.LMO = 'L' THEN cast(OHL.QTY_SHIPPED as float) * ((UNITS_OPEN / UNITS) * BURDEN)/UNITS_COMPLETE  ELSE (JO.BURDEN/JO.UNITS) * cast (OHL.QTY_SHIPPED as float) End as REVENUE, OHL.NAME_CUST_SHIP, (Select TOP 1 PART From V_JOB_OPERATIONS Where JOB = JH.JOB and SUFFIX = JH.SUFFIX) AS RAW_MATL FROM (((V_ORDER_HIST_LINE OHL LEFT OUTER JOIN V_INVENTORY_COST IC ON (OHL.PART=IC.PART) AND (OHL.LOCATION=IC.LOCN)) LEFT OUTER JOIN V_ORDER_TO_WO OTW ON (OHL.ORDER_NO=OTW.ORDER_NO) AND (OHL.ORDER_LINE=OTW.ORDER_LINE)) LEFT OUTER JOIN V_JOB_HEADER JH ON (OTW.JOB=JH.JOB) AND (OTW.SUFFIX=JH.SUFFIX)) LEFT OUTER JOIN V_JOB_OPERATIONS JO ON (JH.JOB=JO.JOB) AND (JH.SUFFIX=JO.SUFFIX) WHERE (OHL.DATE_INVOICE >= '{0}' AND OHL.DATE_INVOICE <= '{1}') and JO.SEQ < '990000' ORDER BY OHL.DATE_INVOICE, OHL.INVOICE, JOB_SUFFIX, JO.SEQ;",V.Screen.Form!dtp_Start.Value.PervasiveDate,V.Screen.Form!dtp_End.Value.PervasiveDate,V.Local.sSQL)
+	
+'	F.Intrinsic.String.Build("SELECT OHL.PRODUCT_LINE, OHL.DATE_INVOICE, JO.SEQ, JO.LMO, JO.PART, OHL.INVOICE, OTW.JOB + '-' + OTW.SUFFIX as JOB_SUFFIX, JH.QTY_ORDER, JO.BURDEN, JO.UM, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select SUM(JDS.QTY * JDS.LABOR_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End AS LABOR_COST, (Select CAST(SUM(JDS.MATL_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as MATERIAL_COST, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select cast(SUM(JDS.QTY * JDS.OUTS_COST) as float) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End as OUTSIDE_COST, (Select CAST(SUM(JDS.FRGT_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as FREIGHT, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select SUM(JDS.QTY * JDS.OVHD_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End AS OVERHEAD_COST, (Select CAST(SUM(JDS.OTH_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as OTHER_COST, OHL.QTY_SHIPPED, Case WHEN JO.UNITS = '0' THEN '0' WHEN JO.UNITS_COMPLETE = '0' THEN '0' WHEN JO.LMO = 'L' THEN cast(OHL.QTY_SHIPPED as float) * ((UNITS_OPEN / UNITS) * BURDEN) / UNITS_COMPLETE ELSE (JO.BURDEN/JO.UNITS) * cast(OHL.QTY_SHIPPED as float) End as REVENUE, OHL.NAME_CUST_SHIP, (Select TOP 1 PART From V_JOB_OPERATIONS Where JOB = JH.JOB and SUFFIX = JH.SUFFIX) AS RAW_MATL FROM (((V_ORDER_HIST_LINE OHL LEFT OUTER JOIN V_INVENTORY_COST IC ON (OHL.PART=IC.PART) AND (OHL.LOCATION=IC.LOCN)) LEFT OUTER JOIN V_ORDER_TO_WO OTW ON (OHL.ORDER_NO=OTW.ORDER_NO) AND (OHL.ORDER_LINE=OTW.ORDER_LINE)) LEFT OUTER JOIN V_JOB_HEADER JH ON (OTW.JOB=JH.JOB) AND (OTW.SUFFIX=JH.SUFFIX)) LEFT OUTER JOIN V_JOB_OPERATIONS JO ON (JH.JOB=JO.JOB) AND (JH.SUFFIX=JO.SUFFIX) WHERE (OHL.DATE_INVOICE >= '{0}' AND OHL.DATE_INVOICE <= '{1}') and JO.SEQ < '990000' ORDER BY OHL.DATE_INVOICE, OHL.INVOICE, JOB_SUFFIX, JO.SEQ;",V.Screen.Form!dtp_Start.Value.PervasiveDate,V.Screen.Form!dtp_End.Value.PervasiveDate,V.Local.sSQL)
+
+'	F.Intrinsic.String.Build("SELECT OHL.PRODUCT_LINE, OHL.DATE_INVOICE, JO.SEQ, JO.LMO, JO.PART, OHL.INVOICE, OTW.JOB + '-' + OTW.SUFFIX as JOB_SUFFIX, JH.QTY_ORDER, JO.BURDEN, JO.UM, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select SUM(JDS.QTY * JDS.LABOR_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End AS LABOR_COST, (Select CAST(SUM(JDS.MATL_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as MATERIAL_COST, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select cast(SUM(JDS.QTY * JDS.OUTS_COST) as float) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End as OUTSIDE_COST, (Select CAST(SUM(JDS.FRGT_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as FREIGHT, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select SUM(JDS.QTY * JDS.OVHD_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End AS OVERHEAD_COST, (Select CAST(SUM(JDS.OTH_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) as OTHER_COST, OHL.QTY_SHIPPED, Case WHEN JO.UNITS = '0' THEN '0' WHEN JO.LMO = 'L' THEN cast(OHL.QTY_SHIPPED as float) * ((UNITS_OPEN / UNITS) * BURDEN) / UNITS_COMPLETE ELSE (JO.BURDEN/JO.UNITS) * cast(OHL.QTY_SHIPPED as float) End as REVENUE, OHL.NAME_CUST_SHIP, (Select TOP 1 PART From V_JOB_OPERATIONS Where JOB = JH.JOB and SUFFIX = JH.SUFFIX) AS RAW_MATL FROM (((V_ORDER_HIST_LINE OHL LEFT OUTER JOIN V_INVENTORY_COST IC ON (OHL.PART=IC.PART) AND (OHL.LOCATION=IC.LOCN)) LEFT OUTER JOIN V_ORDER_TO_WO OTW ON (OHL.ORDER_NO=OTW.ORDER_NO) AND (OHL.ORDER_LINE=OTW.ORDER_LINE)) LEFT OUTER JOIN V_JOB_HEADER JH ON (OTW.JOB=JH.JOB) AND (OTW.SUFFIX=JH.SUFFIX)) LEFT OUTER JOIN V_JOB_OPERATIONS JO ON (JH.JOB=JO.JOB) AND (JH.SUFFIX=JO.SUFFIX) WHERE (OHL.DATE_INVOICE >= '{0}' AND OHL.DATE_INVOICE <= '{1}') and JO.SEQ < '990000' ORDER BY OHL.DATE_INVOICE, OHL.INVOICE, JOB_SUFFIX, JO.SEQ;",V.Screen.Form!dtp_Start.Value.PervasiveDate,V.Screen.Form!dtp_End.Value.PervasiveDate,V.Local.sSQL)
+
+	F.Intrinsic.String.Build("SELECT OHL.PRODUCT_LINE, OHL.DATE_INVOICE, JO.SEQ, JO.LMO, JO.PART, OHL.INVOICE, OTW.JOB + '-' + OTW.SUFFIX as JOB_SUFFIX, JH.QTY_ORDER, JO.BURDEN, JO.UM, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select SUM(JDS.QTY * JDS.LABOR_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End AS LABOR_COST, Case WHEN (Select CAST(SUM(JDS.MATL_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) <> '' THEN (Select CAST(SUM(JDS.MATL_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) ELSE '0' End as MATERIAL_COST, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select cast(SUM(JDS.QTY * JDS.OUTS_COST) as float) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End as OUTSIDE_COST, Case WHEN (Select CAST(SUM(JDS.FRGT_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) <> '' THEN (Select CAST(SUM(JDS.FRGT_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) ELSE '0' End as FREIGHT, Case WHEN JO.UNITS_COMPLETE = '0' THEN '0' ELSE (Select SUM(JDS.QTY * JDS.OVHD_COST) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) / cast(JO.UNITS_COMPLETE as float) * cast (OHL.QTY_SHIPPED as float) End AS OVERHEAD_COST, Case WHEN (Select CAST(SUM(JDS.OTH_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) <> '' THEN (Select CAST(SUM(JDS.OTH_COST) AS FLOAT) From V_JOB_DTL_SUPP JDS WHERE JO.JOB = JDS.JOB AND JO.SUFFIX = JDS.SUFFIX AND JO.SEQ = JDS.SEQ and JDS.EDITED_WO_DTL <> 'R' GROUP BY JDS.JOB, JDS.SUFFIX, JDS.SEQ) * cast (OHL.QTY_SHIPPED as float) ELSE '0' End as OTHER_COST, OHL.QTY_SHIPPED, cast(Case WHEN JO.UNITS = '0' THEN '0' WHEN JO.UNITS_COMPLETE = '0' THEN '0' WHEN JO.LMO = 'L' THEN OHL.QTY_SHIPPED*((JO.UNITS_OPEN/JO.UNITS)*JO.BURDEN)/JO.UNITS_COMPLETE ELSE (JO.BURDEN/JO.UNITS)*OHL.QTY_SHIPPED END as NUMERIC(19,4)) as REVENUE, OHL.NAME_CUST_SHIP, (Select TOP 1 PART From V_JOB_OPERATIONS Where JOB = JH.JOB and SUFFIX = JH.SUFFIX) AS RAW_MATL FROM (((V_ORDER_HIST_LINE OHL LEFT OUTER JOIN V_INVENTORY_COST IC ON (OHL.PART=IC.PART) AND (OHL.LOCATION=IC.LOCN)) LEFT OUTER JOIN V_ORDER_TO_WO OTW ON (OHL.ORDER_NO=OTW.ORDER_NO) AND (OHL.ORDER_LINE=OTW.ORDER_LINE)) LEFT OUTER JOIN V_JOB_HEADER JH ON (OTW.JOB=JH.JOB) AND (OTW.SUFFIX=JH.SUFFIX)) LEFT OUTER JOIN V_JOB_OPERATIONS JO ON (JH.JOB=JO.JOB) AND (JH.SUFFIX=JO.SUFFIX) WHERE (OHL.DATE_INVOICE >= '{0}' AND OHL.DATE_INVOICE <= '{1}') and JO.SEQ < '990000' ORDER BY OHL.DATE_INVOICE, OHL.INVOICE, JOB_SUFFIX, JO.SEQ;",V.Screen.Form!dtp_Start.Value.PervasiveDate,V.Screen.Form!dtp_End.Value.PervasiveDate,V.Local.sSQL)
+	
+	'Check if DataTable exists, if so, close it
+	F.Intrinsic.Control.If(V.DataTable.dtData.Exists)
+		F.Data.DataTable.Close("dtData")
+	F.Intrinsic.Control.EndIf
+'		Function.Intrinsic.Debug.InvokeDebugger
+'		Function.Intrinsic.Debug.Stop
+
+	'Connect
+	F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+	F.Data.DataTable.CreateFromSQL("dtData","con",V.Local.sSQL)
+	
+	'RAW MATL MATL
+	F.Data.DataTable.AddColumn("dtData","RAW_MATL_MCOST","FLOAT")
+	V.Local.sSQL.Set("Select PART, MATL from V_INVENTORY_COST;")
+	F.Data.Dictionary.CreateFromSQL("dicRMcost","con",V.Local.sSQL)
+	F.Data.Dictionary.SetDefaultReturn("dicRMcost","0")
+	F.Data.DataTable.FillFromDictionary("dtData","dicRMcost","RAW_MATL","RAW_MATL_MCOST")
+	F.Data.Dictionary.Close("dicRMcost")
+	'RAW MATL LABOR
+	F.Data.DataTable.AddColumn("dtData","RAW_MATL_LCOST","FLOAT")
+	V.Local.sSQL.Set("Select PART, LABOR from V_INVENTORY_COST;")
+	F.Data.Dictionary.CreateFromSQL("dicLMcost","con",V.Local.sSQL)
+	F.Data.Dictionary.SetDefaultReturn("dicLMcost","0")
+	F.Data.DataTable.FillFromDictionary("dtData","dicLMcost","RAW_MATL","RAW_MATL_LCOST")
+	F.Data.Dictionary.Close("dicLMcost")
+	'RAW MATL OVHD
+	F.Data.DataTable.AddColumn("dtData","RAW_MATL_OVHD","FLOAT")
+	V.Local.sSQL.Set("Select PART, OVHD from V_INVENTORY_COST;")
+	F.Data.Dictionary.CreateFromSQL("dicOvhdMcost","con",V.Local.sSQL)
+	F.Data.Dictionary.SetDefaultReturn("dicOvhdMcost","0")
+	F.Data.DataTable.FillFromDictionary("dtData","dicOvhdMcost","RAW_MATL","RAW_MATL_OVHD")
+	F.Data.Dictionary.Close("dicOvhdMcost")
+	'RAW MATL OUTS
+	F.Data.DataTable.AddColumn("dtData","RAW_MATL_OUTS","FLOAT")
+	V.Local.sSQL.Set("Select PART, OUTS from V_INVENTORY_COST;")
+	F.Data.Dictionary.CreateFromSQL("dicOutMcost","con",V.Local.sSQL)
+	F.Data.Dictionary.SetDefaultReturn("dicOutMcost","0")
+	F.Data.DataTable.FillFromDictionary("dtData","dicOutMcost","RAW_MATL","RAW_MATL_OUTS")
+	F.Data.Dictionary.Close("dicOutMcost")
+	'RAW MATL OTH
+	F.Data.DataTable.AddColumn("dtData","RAW_MATL_OTH","FLOAT")
+	V.Local.sSQL.Set("Select PART, OTH from V_INVENTORY_COST;")
+	F.Data.Dictionary.CreateFromSQL("dicOutMcost","con",V.Local.sSQL)
+	F.Data.Dictionary.SetDefaultReturn("dicOutMcost","0")
+	F.Data.DataTable.FillFromDictionary("dtData","dicOutMcost","RAW_MATL","RAW_MATL_OTH")
+	F.Data.Dictionary.Close("dicOutMcost")
+	'RAW MATL FREIGHT
+	F.Data.DataTable.AddColumn("dtData","RAW_MATL_FREIGHT","FLOAT")
+	V.Local.sSQL.Set("Select PART, FREIGHT from V_INVENTORY_COST;")
+	F.Data.Dictionary.CreateFromSQL("dicFMcost","con",V.Local.sSQL)
+	F.Data.Dictionary.SetDefaultReturn("dicFMcost","0")
+	F.Data.DataTable.FillFromDictionary("dtData","dicFMcost","RAW_MATL","RAW_MATL_FREIGHT")
+	F.Data.Dictionary.Close("dicFMcost")
+	
+	'Run logic for Labor and Material for HONING REVENUE seq
+	F.Data.DataTable.AddExpressionColumn("dtData","NEW_LABOR","Float","IIF(PART = 'HONING REVENUE', RAW_MATL_LCOST * QTY_SHIPPED, LABOR_COST)")
+	F.Data.DataTable.AddExpressionColumn("dtData","NEW_OVHD","Float","IIF(PART = 'HONING REVENUE', RAW_MATL_OVHD * QTY_SHIPPED, OVERHEAD_COST)")
+	
+	'Close DB Connection
+	F.ODBC.Connection!con.Close
+	
+	F.Data.DataView.Create("dtData","dvData")
+	
+	Gui.Form.GsGC_Data.AddGridviewFromDataview("gvData","dtData","dvData")
+	
+	F.Intrinsic.Control.CallSub(Load_GC)
+	
+	Gui.Form.dtp_Start.Enabled(True)
+	Gui.Form.dtp_End.Enabled(True)
+	F.Intrinsic.UI.CloseWaitDialog
+	
+	gui.Form..Enabled(true)
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry	
+Program.Sub.Load_Data.End
+
+Program.Sub.Load_GC.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+
+	Gui.Form.GsGC_Data.MainView("gvData")
+	Gui.Form.GsGC_Data.SuspendLayout()
+	
+	'GridView Properties
+	Gui.Form.GsGC_Data.SetGridviewProperty("gvData","MultiSelect",True)
+	Gui.Form.GsGC_Data.SetGridviewProperty("gvData","OptionBehaviorEditable",True)
+	Gui.Form.GsGC_Data.SetGridviewProperty("gvData","AllowSort",True)
+	Gui.Form.GsGC_Data.SetGridviewProperty("gvData","AllowFilter",True)
+	Gui.Form.GsGC_Data.SetGridviewProperty("gvData","EnableAppearanceOddRow",True)	
+	Gui.Form.GsGC_Data.SetGridviewProperty("gvData","OptionsViewShowGroupPanel",False)
+	Gui.Form.GsGC_Data.SetGridviewProperty("gvData","OptionsViewColumnAutoWidth",True)
+	'PRODUCT_LINE
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","Caption","PL")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","MinWidth",30)
+'	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","Width",30)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","FixedWidth","30")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","CellHAlignment","Near")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","ReadOnly",True)
+'	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PRODUCT_LINE","CellBackColor","LightYellow")
+	'DATE_INVOICE
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","Caption","Invoice Date")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","MinWidth","90")
+'	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","Width","90")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","FixedWidth","90")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","CellHAlignment","Near")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","DisplayCustomDatetime","d")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","DATE_INVOICE","AllowSort",True)
+	'SEQ
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","Caption","Seq")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","CellHAlignment","Near")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","Width","60")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","SEQ","AllowSort",True)
+	'LMO
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","Caption","LMO")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","CellHAlignment","Center")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","MinWidth","30")
+	'Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","Width","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","FixedWidth","30")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LMO","AllowSort",True)
+	'PART
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","Caption","Department")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","CellHAlignment","Near")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","HeaderHAlignment","Center")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","MinWidth","100")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","Width","120")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","PART","AllowSort",True)
+	'INVOICE
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","Caption","Invoice")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","MinWidth",70)
+'	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","Width",70)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","FixedWidth",70)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","CellHAlignment","Near")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","INVOICE","AllowSort",True)
+	'JOB_SUFFIX
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","Caption","Work Order")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","CellHAlignment","Near")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","MinWidth","80")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","FixedWidth","80")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","JOB_SUFFIX","AllowSort",True)
+	'QTY_ORDER
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","Caption","Ordered")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","Width","70")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_ORDER","EditMaskAsDisplayFormat",True)
+	'BURDEN
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","Caption","Each")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","HeaderHAlignment","Center")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","MinWidth","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","BURDEN","EditMaskAsDisplayFormat",True)
+	'UM
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","Caption","UM")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","CellHAlignment","Center")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","MinWidth","30")
+	'Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","Width","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","FixedWidth","30")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","UM","AllowSort",True)
+	'LABOR_COST
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","Caption","Labor Cost")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","EditMaskAsDisplayFormat",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","LABOR_COST","Visible",False)
+	'MATERIAL_COST
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","Caption","Material Cost")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","MATERIAL_COST","EditMaskAsDisplayFormat",True)
+	'OUTSIDE_COST
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","Caption","Outside Cost")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OUTSIDE_COST","EditMaskAsDisplayFormat",True)
+	'FREIGHT
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","Caption","Freight")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","FREIGHT","EditMaskAsDisplayFormat",True)
+	'OVERHEAD_COST
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","Caption","Overhead Cost")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","EditMaskAsDisplayFormat",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OVERHEAD_COST","Visible",False)
+	'OTHER_COST
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","Caption","Other Cost")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","HeaderFontBold",True)		
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","OTHER_COST","EditMaskAsDisplayFormat",True)
+	'QTY_SHIPPED
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","Caption","Qty Ship")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","CellHAlignment","Far")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","MinWidth","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","QTY_SHIPPED","EditMaskAsDisplayFormat",True)
+	'REVENUE
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","Caption","Revenue")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","CellHAlignment","Far")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","HeaderFontBold",True)	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","MinWidth","60")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","Width","80")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","REVENUE","EditMaskAsDisplayFormat",True)
+	'NAME_CUST_SHIP
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","Caption","Customer")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","CellHAlignment","Near")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","MinWidth","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","Width","150")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NAME_CUST_SHIP","AllowSort",True)
+	'RAW_MATL								
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","RAW_MATL","Visible",False)
+	'RAW_MATL_MCOST
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","RAW_MATL_MCOST","Visible",False)
+	'RAW_MATL_LCOST
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","RAW_MATL_LCOST","Visible",False)
+	'RAW_MATL_OVHD
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","RAW_MATL_OVHD","Visible",False)
+	'RAW_MATL_OUTS
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","RAW_MATL_OUTS","Visible",False)
+	'RAW_MATL_OTH
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","RAW_MATL_OTH","Visible",False)
+	'RAW_MATL_FREIGHT
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","RAW_MATL_FREIGHT","Visible",False)
+	'NEW_LABOR
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","Caption","Labor Cost")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","EditMaskAsDisplayFormat",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","Visible",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_LABOR","VisibleIndex",10) 
+	'NEW_OVHD
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","Caption","Overhead Cost")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","CellHAlignment","Far")	
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","HeaderFontBold",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","HeaderHAlignment","Center")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","MinWidth","40")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","Width","50")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","AllowEdit",False)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","AllowSort",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","EditMaskType","Numeric")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","EditMask","#,###,##0.00")
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","EditMaskAsDisplayFormat",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","Visible",True)
+	Gui.Form.GsGC_Data.SetColumnProperty("gvData","NEW_OVHD","VisibleIndex",14)
+
+	Gui.Form.GsGC_Data.BestFitColumns("gvData")
+	
+	Gui.Form.GsGC_Data.ResumeLayout()
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Load_GC.End
+
+Program.Sub.SetContextMenu.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+	Gui.Form..ContextMenuCreate("ctxMain")
+	Gui.Form.GsGC_Data.ContextMenuAttach("ctxMain")
+	
+	Gui.Form..ContextMenuAddItem("ctxMain","Refresh",0,"Refresh")
+	Gui.Form..ContextMenuSetItemEventHandler("ctxMain","Refresh","Click_Refresh")
+	
+	Gui.Form..ContextMenuAddItem("ctxMain","Export",0,"Export")
+	Gui.Form..ContextMenuSetItemEventHandler("ctxMain","Export","Click_Export")
+	
+	'Gui.Form..ContextMenuAddItem("ctxMain","ResetColumns",0,"Reset Columns")
+	'Gui.Form..ContextMenuSetItemEventHandler("ctxMain","ResetColumns","Click_ResetColumns")
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.SetContextMenu.End
+
+Program.Sub.Click_ResetColumns.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+
+	
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Click_ResetColumns.End
+
+Program.Sub.dtp_Start_LostFocus.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	Gui.Form.dtp_End.Value(V.Screen.Form!dtp_Start.Value)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.dtp_Start_LostFocus.End
